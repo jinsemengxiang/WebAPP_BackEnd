@@ -1,8 +1,21 @@
 from flask import Flask, request
 from flask.json import jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
+
+from config import BaseConfig
+from myapp.common.R.json_response import json_response
+from myapp.controller.user import user as user_blueprint
 
 app = Flask(__name__)
+
+# 注册蓝图
+app.register_blueprint(user_blueprint)
+
+app.config.from_object(BaseConfig)
+db = SQLAlchemy(app)
+
 CORS(app)
 
 
@@ -26,14 +39,22 @@ def test():
 
 # 如果是POST请求，并且传入的数据是JSON形式，按下面这样写
 @app.route('/postTest', methods=['POST'])
+@json_response(200)
 def post_test():
     json = request.json
     username = json['username']
     password = json['password']
     print(username + '===' + password)
+    raise Exception('测试异常')
     data = {'message': '你好'}
-    return jsonify(data)
+    return data
 
+
+with app.app_context():
+    with db.engine.connect() as conn:
+        result = db.session.execute(text("show databases"))
+        for row in result:
+            print(row)
 
 if __name__ == '__main__':
     app.run()
